@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FastekDot Store — Stripe Checkout Engine</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between font-sans">
+
+  <!-- Header -->
+  <header class="border-b border-slate-800 bg-slate-900/60 backdrop-blur sticky top-0 z-50">
+    <div class="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
+      <div class="flex items-center space-x-3">
+        <div class="bg-indigo-600 text-white font-bold px-3 py-1.5 rounded-xl shadow-lg">FS</div>
+        <span class="text-lg font-bold tracking-wider">FastekDot Store</span>
+      </div>
+      <div class="text-sm text-slate-400">
+        Engineered by <span class="text-indigo-400 font-medium">Rana Yasir Mahy Ud Din</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Store Content -->
+  <main class="max-w-6xl mx-auto px-6 py-12 flex-grow w-full">
+    <div class="text-center mb-12">
+      <h1 class="text-4xl font-extrabold tracking-tight mb-3">Stripe Integrated Products</h1>
+      <p class="text-slate-400 max-w-xl mx-auto">Select any premium tech product below to test secure checkout session generation and order processing.</p>
+    </div>
+
+    <!-- Product Grid -->
+    <div id="product-grid" class="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <!-- Dynamic Products Will Load Here -->
+    </div>
+
+    <!-- Notification Banner -->
+    <div id="response-modal" class="hidden mt-8 p-4 rounded-xl bg-slate-900 border border-slate-800 max-w-xl mx-auto text-center shadow-2xl">
+      <p id="response-text" class="text-sm text-indigo-300"></p>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-slate-800 bg-slate-900/40 py-6 text-center text-xs text-slate-500">
+    © 2026 Rana Yasir Mahy Ud Din • E-Commerce Stripe Integration Backend & Frontend
+  </footer>
+
+  <!-- Frontend Script -->
+  <script>
+    async function fetchProducts() {
+      try {
+        const res = await fetch('/api/payment/products');
+        const json = await res.json();
+        const grid = document.getElementById('product-grid');
+        
+        if (!json.success) return;
+
+        grid.innerHTML = json.data.map(p => `
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col justify-between shadow-xl hover:border-indigo-500/50 transition-all">
+            <div>
+              <div class="flex justify-between items-start mb-4">
+                <span class="bg-indigo-500/10 text-indigo-400 text-xs font-semibold px-2.5 py-1 rounded-full">In Stock (${p.stock})</span>
+                <span class="text-emerald-400 font-bold text-lg">PKR ${p.price.toLocaleString()}</span>
+              </div>
+              <h3 class="text-xl font-bold mb-2">${p.name}</h3>
+              <p class="text-slate-400 text-sm mb-6">High quality certified product with secure Stripe payment gateway integration.</p>
+            </div>
+            <button onclick="buyProduct(${p.id})" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2.5 px-4 rounded-xl transition-all shadow-lg shadow-indigo-600/20">
+              Buy with Stripe
+            </button>
+          </div>
+        `).join('');
+      } catch (err) {
+        console.error('Error fetching products:', err);
+      }
+    }
+
+    async function buyProduct(productId) {
+      const modal = document.getElementById('response-modal');
+      const text = document.getElementById('response-text');
+      
+      modal.classList.remove('hidden');
+      text.innerText = "Generating Stripe Checkout Session...";
+
+      try {
+        const res = await fetch('/api/payment/create-checkout-session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ productId, quantity: 1 })
+        });
+        const json = await res.json();
+
+        if (json.success) {
+          text.innerHTML = `✅ <b>Success!</b> Session ID: <span class="text-white">${json.sessionId}</span><br><a href="${json.checkoutUrl}" target="_blank" class="text-indigo-400 underline mt-2 inline-block">Click here to simulate Stripe Checkout Redirect ↗</a>`;
+        } else {
+          text.innerText = "❌ Error: " + json.message;
+        }
+      } catch (err) {
+        text.innerText = "❌ Failed to connect to server.";
+      }
+    }
+
+    fetchProducts();
+  </script>
+</body>
+</html>
